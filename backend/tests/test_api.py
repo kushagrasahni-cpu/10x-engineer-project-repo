@@ -1,3 +1,5 @@
+from fastapi.testclient import TestClient
+
 class TestCollections:
     """Tests for collection endpoints."""
 
@@ -14,7 +16,7 @@ class TestCollections:
         
         # Create prompt in collection
         prompt_data = {**sample_prompt_data, "collection_id": collection_id}
-    client.post("/prompts", json=prompt_data)
+        client.post("/prompts", json=prompt_data)  # Corrected indentation
 
         # Attempt to delete the collection
         del_response = client.delete(f"/collections/{collection_id}")
@@ -29,3 +31,25 @@ class TestCollections:
         if prompts:
             # Prompt exists with orphaned collection_id
             assert prompts[0]["collection_id"] == collection_id
+
+
+class TestPrompts:
+    def test_patch_prompt(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+
+        # Partially update it
+        partial_update_data = {
+            "title": "Partially Updated Title"
+        }
+        response = client.patch(f"/prompts/{prompt_id}", json=partial_update_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["title"] == "Partially Updated Title"
+        assert data["content"] == sample_prompt_data["content"]
+
+        # Check if the updated_at field is refreshed
+        original_updated_at = create_response.json()["updated_at"]
+        assert data["updated_at"] != original_updated_at
+
