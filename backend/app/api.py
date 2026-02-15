@@ -143,14 +143,12 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-    # BUG #4: We delete the collection but don't handle the prompts!
-    # Prompts with this collection_id become orphaned with invalid reference
-    # Should either: delete the prompts, set collection_id to None, or prevent deletion
-    
+    # Check if there are prompts associated with this collection
+    associated_prompts = storage.get_prompts_by_collection(collection_id)
+    if associated_prompts:
+        raise HTTPException(status_code=400, detail="Collection cannot be deleted. It has associated prompts.")
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
-    
-    # Missing: Handle prompts that belong to this collection!
     
     return None
 
