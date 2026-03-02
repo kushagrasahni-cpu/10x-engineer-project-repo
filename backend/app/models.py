@@ -103,6 +103,8 @@ class Prompt(PromptBase):
     updated_at: datetime = Field(default_factory=get_current_time)
 
     class Config:
+        """Pydantic configuration for the Prompt model."""
+
         from_attributes = True
 
 
@@ -146,6 +148,8 @@ class Collection(CollectionBase):
     created_at: datetime = Field(default_factory=get_current_time)
 
     class Config:
+        """Pydantic configuration for the Collection model."""
+
         from_attributes = True
 
 
