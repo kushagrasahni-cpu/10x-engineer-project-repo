@@ -306,6 +306,18 @@ The `utils.py` module provides:
 
 ---
 
+## Contributing
+
+1. Create a new branch from `main` for your feature or fix.
+2. Follow the coding standards defined in [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
+3. Add Google-style docstrings to all new functions, methods, and classes.
+4. Write tests for new functionality — target 80%+ coverage.
+5. Run the test suite before submitting: `pytest tests/ -v`
+6. Use clear, descriptive commit messages that explain the "why" behind changes.
+7. Open a pull request against `main` with a summary of what changed and why.
+
+---
+
 ## License
 
 This project is part of an academic engineering assignment.
