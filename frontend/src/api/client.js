@@ -1,4 +1,4 @@
-const BASE_URL = '/api'
+const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`
@@ -7,13 +7,23 @@ async function request(path, options = {}) {
     ...options,
   }
 
-  const response = await fetch(url, config)
+  let response
+  try {
+    response = await fetch(url, config)
+  } catch {
+    throw new Error('Network error. Please check your connection and try again.')
+  }
 
   if (response.status === 204) {
     return null
   }
 
-  const data = await response.json()
+  let data
+  try {
+    data = await response.json()
+  } catch {
+    throw new Error(`Unexpected response (${response.status})`)
+  }
 
   if (!response.ok) {
     const message = data.detail
