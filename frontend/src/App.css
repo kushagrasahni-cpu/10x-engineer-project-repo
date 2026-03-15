@@ -23,6 +23,10 @@
   margin: 0 auto;
 }
 
+.app__toolbar {
+  margin-bottom: 20px;
+}
+
 @media (max-width: 768px) {
   .app {
     flex-direction: column;
