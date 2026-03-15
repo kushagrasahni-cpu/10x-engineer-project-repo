@@ -6,8 +6,9 @@ function CollectionForm({ onSubmit, onCancel }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) {
       setError('Name is required')
@@ -17,11 +18,17 @@ function CollectionForm({ onSubmit, onCancel }) {
       setError('Name must be under 100 characters')
       return
     }
+    if (submitting) return
     setError('')
-    onSubmit({
-      name: name.trim(),
-      description: description.trim() || null,
-    })
+    setSubmitting(true)
+    try {
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim() || null,
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -55,7 +62,9 @@ function CollectionForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="collection-form__actions">
-        <Button type="submit" variant="primary">Create</Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
+          {submitting ? 'Creating...' : 'Create'}
+        </Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
     </form>

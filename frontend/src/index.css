@@ -48,3 +48,12 @@ a {
   color: var(--color-primary);
   text-decoration: none;
 }
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+}

@@ -8,6 +8,7 @@ function PromptForm({ initial, collections, onSubmit, onCancel }) {
   const [description, setDescription] = useState('')
   const [collectionId, setCollectionId] = useState('')
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (initial) {
@@ -28,15 +29,20 @@ function PromptForm({ initial, collections, onSubmit, onCancel }) {
     return Object.keys(newErrors).length === 0
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (!validate()) return
-    onSubmit({
-      title: title.trim(),
-      content: content.trim(),
-      description: description.trim() || null,
-      collection_id: collectionId || null,
-    })
+    if (!validate() || submitting) return
+    setSubmitting(true)
+    try {
+      await onSubmit({
+        title: title.trim(),
+        content: content.trim(),
+        description: description.trim() || null,
+        collection_id: collectionId || null,
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -96,8 +102,8 @@ function PromptForm({ initial, collections, onSubmit, onCancel }) {
       </div>
 
       <div className="prompt-form__actions">
-        <Button type="submit" variant="primary">
-          {initial ? 'Update' : 'Create'}
+        <Button type="submit" variant="primary" disabled={submitting}>
+          {submitting ? 'Saving...' : initial ? 'Update' : 'Create'}
         </Button>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
