@@ -1,0 +1,25 @@
+.error-message {
+  text-align: center;
+  padding: 24px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+}
+
+.error-message__text {
+  color: var(--color-danger);
+  margin-bottom: 12px;
+}
+
+.error-message__retry {
+  padding: 6px 14px;
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.error-message__retry:hover {
+  background: var(--color-danger-hover);
+}

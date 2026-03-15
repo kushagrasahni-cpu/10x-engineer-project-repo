@@ -1,0 +1,17 @@
+.prompt-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.prompt-list__empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary);
+}
+
+.prompt-list__empty-hint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 8px;
+}

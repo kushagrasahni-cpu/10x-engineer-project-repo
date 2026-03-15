@@ -1,0 +1,115 @@
+.sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sidebar__title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.sidebar__add-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.sidebar__add-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.sidebar__list {
+  list-style: none;
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar__item:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.sidebar__item--active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.sidebar__item--active:hover {
+  background: var(--color-primary-hover);
+  color: white;
+}
+
+.sidebar__item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__delete-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  opacity: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.sidebar__item:hover .sidebar__delete-btn {
+  opacity: 0.6;
+}
+
+.sidebar__delete-btn:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar__list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .sidebar__item {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
