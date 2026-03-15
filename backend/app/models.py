@@ -153,6 +153,44 @@ class Collection(CollectionBase):
         from_attributes = True
 
 
+# ============== Version Models ==============
+
+class PromptVersion(BaseModel):
+    """A historical snapshot of a prompt's state before an update.
+
+    Attributes:
+        id: Auto-generated UUID4 identifier for this version.
+        prompt_id: The UUID of the parent prompt.
+        version_number: Auto-incrementing version number per prompt (1, 2, 3, ...).
+        title: The prompt title at this version.
+        content: The prompt content at this version.
+        description: The prompt description at this version.
+        collection_id: The collection assignment at this version.
+        created_at: UTC timestamp when this version was saved.
+    """
+
+    id: str = Field(default_factory=generate_id)
+    prompt_id: str
+    version_number: int
+    title: str
+    content: str
+    description: Optional[str] = None
+    collection_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_current_time)
+
+
+class PromptVersionList(BaseModel):
+    """Response wrapper for a list of prompt versions.
+
+    Attributes:
+        versions: The list of PromptVersion objects.
+        total: The total number of versions.
+    """
+
+    versions: List[PromptVersion]
+    total: int
+
+
 # ============== Response Models ==============
 
 class PromptList(BaseModel):

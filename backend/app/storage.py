@@ -6,7 +6,7 @@ production environment, this would be replaced with a database.
 """
 
 from typing import Dict, List, Optional
-from app.models import Prompt, Collection
+from app.models import Prompt, Collection, PromptVersion
 
 
 class Storage:
@@ -26,6 +26,7 @@ class Storage:
         """Initialize an empty storage instance."""
         self._prompts: Dict[str, Prompt] = {}
         self._collections: Dict[str, Collection] = {}
+        self._versions: Dict[str, List[PromptVersion]] = {}
 
     # ============== Prompt Operations ==============
 
@@ -153,15 +154,73 @@ class Storage:
         """
         return [p for p in self._prompts.values() if p.collection_id == collection_id]
 
+    # ============== Version Operations ==============
+
+    def create_version(self, prompt_id: str, version: PromptVersion) -> PromptVersion:
+        """Store a new version snapshot for a prompt.
+
+        Args:
+            prompt_id: The UUID of the parent prompt.
+            version: The PromptVersion object to store.
+
+        Returns:
+            The stored PromptVersion object.
+        """
+        if prompt_id not in self._versions:
+            self._versions[prompt_id] = []
+        self._versions[prompt_id].append(version)
+        return version
+
+    def get_versions(self, prompt_id: str) -> List[PromptVersion]:
+        """Retrieve all versions for a prompt.
+
+        Args:
+            prompt_id: The UUID of the prompt.
+
+        Returns:
+            A list of PromptVersion objects, may be empty.
+        """
+        return list(self._versions.get(prompt_id, []))
+
+    def get_version(self, prompt_id: str, version_number: int) -> Optional[PromptVersion]:
+        """Retrieve a specific version by prompt ID and version number.
+
+        Args:
+            prompt_id: The UUID of the prompt.
+            version_number: The version number to retrieve.
+
+        Returns:
+            The PromptVersion if found, None otherwise.
+        """
+        for v in self._versions.get(prompt_id, []):
+            if v.version_number == version_number:
+                return v
+        return None
+
+    def delete_versions(self, prompt_id: str) -> bool:
+        """Delete all versions for a prompt.
+
+        Args:
+            prompt_id: The UUID of the prompt.
+
+        Returns:
+            True if versions existed and were deleted, False otherwise.
+        """
+        if prompt_id in self._versions:
+            del self._versions[prompt_id]
+            return True
+        return False
+
     # ============== Utility ==============
 
     def clear(self):
-        """Remove all prompts and collections from storage.
+        """Remove all prompts, collections, and versions from storage.
 
         Primarily used in tests to reset state between test cases.
         """
         self._prompts.clear()
         self._collections.clear()
+        self._versions.clear()
 
 
 # Global storage instance

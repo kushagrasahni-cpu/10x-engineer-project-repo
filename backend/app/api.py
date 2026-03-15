@@ -12,6 +12,7 @@ from app.models import (
     Prompt, PromptCreate, PromptUpdate,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
+    PromptVersion, PromptVersionList,
     get_current_time
 )
 from app.storage import storage
@@ -131,12 +132,32 @@ def create_prompt(prompt_data: PromptCreate):
     return storage.create_prompt(prompt)
 
 
+def _save_version(prompt: Prompt) -> None:
+    """Save the current state of a prompt as a version snapshot.
+
+    Args:
+        prompt: The prompt whose current state should be preserved.
+    """
+    existing_versions = storage.get_versions(prompt.id)
+    next_number = len(existing_versions) + 1
+    version = PromptVersion(
+        prompt_id=prompt.id,
+        version_number=next_number,
+        title=prompt.title,
+        content=prompt.content,
+        description=prompt.description,
+        collection_id=prompt.collection_id,
+    )
+    storage.create_version(prompt.id, version)
+
+
 @app.put("/prompts/{prompt_id}", response_model=Prompt)
 def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     """Fully update an existing prompt, replacing all mutable fields.
 
-    Preserves the original ``id`` and ``created_at`` values. The
-    ``updated_at`` timestamp is refreshed to the current time.
+    Saves the pre-update state as a version snapshot before applying
+    changes. Preserves the original ``id`` and ``created_at`` values.
+    The ``updated_at`` timestamp is refreshed to the current time.
 
     Args:
         prompt_id: The UUID of the prompt to update.
@@ -152,13 +173,16 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     existing = storage.get_prompt(prompt_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Prompt not found")
-    
+
     # Validate collection if provided
     if prompt_data.collection_id:
         collection = storage.get_collection(prompt_data.collection_id)
         if not collection:
             raise HTTPException(status_code=400, detail="Collection not found")
-    
+
+    # Save current state as a version before updating
+    _save_version(existing)
+
     # Correctly update the updated_at timestamp
     updated_prompt = Prompt(
         id=existing.id,
@@ -167,9 +191,9 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         description=prompt_data.description,
         collection_id=prompt_data.collection_id,
         created_at=existing.created_at,
-        updated_at=get_current_time()  # Updated line to fix the timestamp
+        updated_at=get_current_time()
     )
-    
+
     return storage.update_prompt(prompt_id, updated_prompt)
 
 
@@ -195,8 +219,11 @@ def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
     if not existing:
         raise HTTPException(status_code=404, detail="Prompt not found")
 
+    # Save current state as a version before updating
+    _save_version(existing)
+
     # Update only the fields provided
-    updated_fields = prompt_data.dict(exclude_unset=True)
+    updated_fields = prompt_data.model_dump(exclude_unset=True)
     for field, value in updated_fields.items():
         setattr(existing, field, value)
 
@@ -221,7 +248,91 @@ def delete_prompt(prompt_id: str):
     """
     if not storage.delete_prompt(prompt_id):
         raise HTTPException(status_code=404, detail="Prompt not found")
+    storage.delete_versions(prompt_id)
     return None
+
+
+# ============== Version Endpoints ==============
+
+@app.get("/prompts/{prompt_id}/versions", response_model=PromptVersionList)
+def list_versions(prompt_id: str):
+    """List all versions for a prompt in reverse chronological order.
+
+    Args:
+        prompt_id: The UUID of the prompt.
+
+    Returns:
+        PromptVersionList: The list of versions and total count.
+
+    Raises:
+        HTTPException: 404 if the prompt does not exist.
+    """
+    prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    versions = storage.get_versions(prompt_id)
+    versions.sort(key=lambda v: v.version_number, reverse=True)
+    return PromptVersionList(versions=versions, total=len(versions))
+
+
+@app.get("/prompts/{prompt_id}/versions/{version_number}", response_model=PromptVersion)
+def get_version(prompt_id: str, version_number: int):
+    """Retrieve a specific version of a prompt.
+
+    Args:
+        prompt_id: The UUID of the prompt.
+        version_number: The version number to retrieve.
+
+    Returns:
+        PromptVersion: The version snapshot.
+
+    Raises:
+        HTTPException: 404 if the prompt or version does not exist.
+    """
+    prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    version = storage.get_version(prompt_id, version_number)
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    return version
+
+
+@app.post("/prompts/{prompt_id}/versions/{version_number}/restore", response_model=Prompt)
+def restore_version(prompt_id: str, version_number: int):
+    """Restore a previous version as the current prompt state.
+
+    Saves the current state as a new version before restoring, so the
+    operation is reversible.
+
+    Args:
+        prompt_id: The UUID of the prompt.
+        version_number: The version number to restore.
+
+    Returns:
+        Prompt: The prompt with restored fields and refreshed updated_at.
+
+    Raises:
+        HTTPException: 404 if the prompt or version does not exist.
+    """
+    existing = storage.get_prompt(prompt_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    version = storage.get_version(prompt_id, version_number)
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    # Save current state before restoring
+    _save_version(existing)
+
+    # Restore fields from the version
+    existing.title = version.title
+    existing.content = version.content
+    existing.description = version.description
+    existing.collection_id = version.collection_id
+    existing.updated_at = get_current_time()
+
+    return storage.update_prompt(prompt_id, existing)
 
 
 # ============== Collection Endpoints ==============
