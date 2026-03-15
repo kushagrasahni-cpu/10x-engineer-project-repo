@@ -227,4 +227,3 @@ class HealthResponse(BaseModel):
 
     status: str
     version: str
-

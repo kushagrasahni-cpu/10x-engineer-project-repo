@@ -69,8 +69,8 @@ def search_prompts(prompts: List[Prompt], query: str) -> List[Prompt]:
     query_lower = query.lower()
     return [
         p for p in prompts
-        if query_lower in p.title.lower() or
-           (p.description and query_lower in p.description.lower())
+        if query_lower in p.title.lower()
+        or (p.description and query_lower in p.description.lower())
     ]
 
 
@@ -117,4 +117,3 @@ def extract_variables(content: str) -> List[str]:
     """
     pattern = r'\{\{(\w+)\}\}'
     return re.findall(pattern, content)
-

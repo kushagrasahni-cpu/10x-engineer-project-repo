@@ -70,19 +70,18 @@ def list_prompts(
             and a total count.
     """
     prompts = storage.get_all_prompts()
-    
+
     # Filter by collection if specified
     if collection_id:
         prompts = filter_prompts_by_collection(prompts, collection_id)
-    
+
     # Search if query provided
     if search:
         prompts = search_prompts(prompts, search)
-    
+
     # Sort by date (newest first)
-    # Note: There might be an issue with the sorting...
     prompts = sort_prompts_by_date(prompts, descending=True)
-    
+
     return PromptList(prompts=prompts, total=len(prompts))
 
 
@@ -103,7 +102,7 @@ def get_prompt(prompt_id: str):
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     return prompt
-    
+
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
 def create_prompt(prompt_data: PromptCreate):
@@ -127,7 +126,7 @@ def create_prompt(prompt_data: PromptCreate):
         collection = storage.get_collection(prompt_data.collection_id)
         if not collection:
             raise HTTPException(status_code=400, detail="Collection not found")
-    
+
     prompt = Prompt(**prompt_data.model_dump())
     return storage.create_prompt(prompt)
 
@@ -366,7 +365,7 @@ def get_collection(collection_id: str):
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     return collection
-    
+
 
 @app.post("/collections", response_model=Collection, status_code=201)
 def create_collection(collection_data: CollectionCreate):
@@ -405,9 +404,11 @@ def delete_collection(collection_id: str):
     # Check if there are prompts associated with this collection
     associated_prompts = storage.get_prompts_by_collection(collection_id)
     if associated_prompts:
-        raise HTTPException(status_code=400, detail="Collection cannot be deleted. It has associated prompts.")
+        raise HTTPException(
+            status_code=400,
+            detail="Collection cannot be deleted. It has associated prompts."
+        )
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
-    
-    return None
 
+    return None
