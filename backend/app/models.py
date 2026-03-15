@@ -6,7 +6,7 @@ models for prompts, collections, and standard response wrappers.
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import uuid4
 
 
@@ -98,14 +98,11 @@ class Prompt(PromptBase):
         updated_at: UTC timestamp updated on every PUT or PATCH operation.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=get_current_time)
     updated_at: datetime = Field(default_factory=get_current_time)
-
-    class Config:
-        """Pydantic configuration for the Prompt model."""
-
-        from_attributes = True
 
 
 # ============== Collection Models ==============
@@ -144,13 +141,10 @@ class Collection(CollectionBase):
         created_at: UTC timestamp set when the collection is created.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=get_current_time)
-
-    class Config:
-        """Pydantic configuration for the Collection model."""
-
-        from_attributes = True
 
 
 # ============== Version Models ==============

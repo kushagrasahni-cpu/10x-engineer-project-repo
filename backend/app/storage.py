@@ -213,7 +213,7 @@ class Storage:
 
     # ============== Utility ==============
 
-    def clear(self):
+    def clear(self) -> None:
         """Remove all prompts, collections, and versions from storage.
 
         Primarily used in tests to reset state between test cases.

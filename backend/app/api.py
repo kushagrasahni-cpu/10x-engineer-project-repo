@@ -20,6 +20,37 @@ from app.utils import sort_prompts_by_date, filter_prompts_by_collection, search
 from app import __version__
 
 
+def _require_prompt(prompt_id: str) -> Prompt:
+    """Retrieve a prompt or raise 404 if not found.
+
+    Args:
+        prompt_id: The UUID of the prompt.
+
+    Returns:
+        The Prompt object.
+
+    Raises:
+        HTTPException: 404 if the prompt does not exist.
+    """
+    prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+
+
+def _validate_collection(collection_id: Optional[str]) -> None:
+    """Validate that a collection exists if an ID is provided.
+
+    Args:
+        collection_id: The collection UUID to validate, or None.
+
+    Raises:
+        HTTPException: 400 if the collection ID is provided but not found.
+    """
+    if collection_id and not storage.get_collection(collection_id):
+        raise HTTPException(status_code=400, detail="Collection not found")
+
+
 app = FastAPI(
     title="PromptLab API",
     description="AI Prompt Engineering Platform",
@@ -39,7 +70,7 @@ app.add_middleware(
 # ============== Health Check ==============
 
 @app.get("/health", response_model=HealthResponse)
-def health_check():
+def health_check() -> HealthResponse:
     """Check the health status of the API.
 
     Returns:
@@ -54,7 +85,7 @@ def health_check():
 def list_prompts(
     collection_id: Optional[str] = None,
     search: Optional[str] = None
-):
+) -> PromptList:
     """List all prompts with optional filtering, search, and sorting.
 
     Prompts are filtered by collection, then searched by query, then
@@ -86,7 +117,7 @@ def list_prompts(
 
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
-def get_prompt(prompt_id: str):
+def get_prompt(prompt_id: str) -> Prompt:
     """Retrieve a single prompt by its unique identifier.
 
     Args:
@@ -98,10 +129,7 @@ def get_prompt(prompt_id: str):
     Raises:
         HTTPException: 404 if no prompt exists with the given ID.
     """
-    prompt = storage.get_prompt(prompt_id)
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-    return prompt
+    return _require_prompt(prompt_id)
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -121,12 +149,7 @@ def create_prompt(prompt_data: PromptCreate):
     Raises:
         HTTPException: 400 if the referenced collection does not exist.
     """
-    # Validate collection exists if provided
-    if prompt_data.collection_id:
-        collection = storage.get_collection(prompt_data.collection_id)
-        if not collection:
-            raise HTTPException(status_code=400, detail="Collection not found")
-
+    _validate_collection(prompt_data.collection_id)
     prompt = Prompt(**prompt_data.model_dump())
     return storage.create_prompt(prompt)
 
@@ -169,20 +192,11 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         HTTPException: 404 if no prompt exists with the given ID.
         HTTPException: 400 if the referenced collection does not exist.
     """
-    existing = storage.get_prompt(prompt_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    existing = _require_prompt(prompt_id)
+    _validate_collection(prompt_data.collection_id)
 
-    # Validate collection if provided
-    if prompt_data.collection_id:
-        collection = storage.get_collection(prompt_data.collection_id)
-        if not collection:
-            raise HTTPException(status_code=400, detail="Collection not found")
-
-    # Save current state as a version before updating
     _save_version(existing)
 
-    # Correctly update the updated_at timestamp
     updated_prompt = Prompt(
         id=existing.id,
         title=prompt_data.title,
@@ -214,11 +228,8 @@ def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
     Raises:
         HTTPException: 404 if no prompt exists with the given ID.
     """
-    existing = storage.get_prompt(prompt_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    existing = _require_prompt(prompt_id)
 
-    # Save current state as a version before updating
     _save_version(existing)
 
     # Update only the fields provided
@@ -266,9 +277,7 @@ def list_versions(prompt_id: str):
     Raises:
         HTTPException: 404 if the prompt does not exist.
     """
-    prompt = storage.get_prompt(prompt_id)
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    _require_prompt(prompt_id)
     versions = storage.get_versions(prompt_id)
     versions.sort(key=lambda v: v.version_number, reverse=True)
     return PromptVersionList(versions=versions, total=len(versions))
@@ -288,9 +297,7 @@ def get_version(prompt_id: str, version_number: int):
     Raises:
         HTTPException: 404 if the prompt or version does not exist.
     """
-    prompt = storage.get_prompt(prompt_id)
-    if not prompt:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    _require_prompt(prompt_id)
     version = storage.get_version(prompt_id, version_number)
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
@@ -314,9 +321,7 @@ def restore_version(prompt_id: str, version_number: int):
     Raises:
         HTTPException: 404 if the prompt or version does not exist.
     """
-    existing = storage.get_prompt(prompt_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    existing = _require_prompt(prompt_id)
     version = storage.get_version(prompt_id, version_number)
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
@@ -363,7 +368,9 @@ def get_collection(collection_id: str):
     """
     collection = storage.get_collection(collection_id)
     if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
+        raise HTTPException(
+            status_code=404, detail="Collection not found"
+        )
     return collection
 
 
